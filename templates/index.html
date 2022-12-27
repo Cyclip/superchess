@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]>      <html class="no-js"> <!--<![endif]-->
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>Superchess | Home</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href={{ url_for('static', filename='css/style.css') }}>
+        <link rel="stylesheet" href={{ url_for('static', filename='css/index.css') }}>
+    </head>
+    <body>
+        <div class="main-banner">
+            <h1 id="title">Superchess</h1>
+            <h5 id="desc">Play chess on a 16x16 board</h5>
+            <div class="buttons">
+                <button onclick="playLocal()">
+                    <img src={{ url_for('static', filename='imgs/user.svg') }} alt="user icon">
+                    Play locally
+                </button>
+                <button onclick="playBot()">
+                    <img src={{ url_for('static', filename='imgs/computer.svg') }} alt="robot icon">
+                    Play against a bot
+                </button>
+            </div>
+        </div>
+        
+        <script src={{ url_for('static', filename='js/index.js') }} async defer></script>
+    </body>
+</html>
