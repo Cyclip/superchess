@@ -1,6 +1,7 @@
 import numpy as np
 from . import pieces as chess_pieces
 import colorama
+import hashlib
 
 class ChessBoard:
     """
@@ -25,8 +26,33 @@ class ChessBoard:
         self.last_moved_piece = None
         self.last_moved_piece_from = None
         self.last_moved_piece_to = None
+        self.game_over = False
+        self.winner = None
 
         print(self)
+    
+    def pos_key(self):
+        """
+        Returns a unique key for the current board position.
+        """
+        position = self.board_to_string_compact()
+    
+        return hashlib.sha256(position.encode("utf-8")).hexdigest()
+    
+    def board_to_string_compact(self):
+        """
+        Returns a compact string representation of the board.
+        """
+        board_string = ""
+
+        for row in self.board:
+            for piece in row:
+                if piece:
+                    board_string += piece.__repr__()
+                else:
+                    board_string += " "
+
+        return board_string
     
     def __repr__(self):
         return self.board_to_string()
@@ -124,6 +150,11 @@ class ChessBoard:
         if isinstance(piece, chess_pieces.Pawn):
             piece.moved_two = abs(start_pos[0] - end_pos[0]) == 2
         
+        # if king is captured
+        if isinstance(piece, chess_pieces.King):
+            self.game_over = True
+            self.winner = piece.colour
+
         return captured_piece
     
     def get_legal_moves(self, pos):
@@ -141,6 +172,12 @@ class ChessBoard:
                 legal_moves.append(move)
         
         return legal_moves
+    
+    def get_legal_moves_by_piece(self, piece):
+        """
+        Returns a list of legal moves for the given piece.
+        """
+        return self.get_legal_moves(piece.pos)
     
     def is_legal_move(self, piece, move):
         """
@@ -248,21 +285,39 @@ class ChessBoard:
         return True
     
     def get_threatened_pieces(self, colour):
-        """Returns a list of pieces threatened by the given colour."""
+        """
+        Returns a list of pieces which are threatened by the given colour.
+        """
         pieces = self.get_white_pieces() if colour == "W" else self.get_black_pieces()
+
         threatened_pieces = []
         for piece in pieces:
-            if self.is_threatened(piece.pos):
-                threatened_pieces.append(piece)
+            # Get all legal moves by piece
+            moves = self.get_legal_moves_by_piece(piece)
+
+            # Check if any of the moves threaten a piece
+            for move in moves:
+                if self.get_piece(move):
+                    threatened_pieces.append(self.get_piece(move))
         
         return threatened_pieces
     
-    def is_threatened(self, pos):
-        """Returns True if the given position is threatened by the enemy."""
-        colour = self.get_piece(pos).colour
-        enemy_pieces = self.get_white_pieces() if colour == "B" else self.get_black_pieces()
-        for piece in enemy_pieces:
-            if pos in piece.get_moves(self):
-                return True
+    def get_board_score(self):
+        """
+        Returns a score for the board.
+        """
+        score = 0
+        for row in self.board:
+            for piece in row:
+                if piece:
+                    score += piece.value
         
-        return False
+        return score
+    
+    def is_in_check(self, colour):
+        """
+        Returns True if the given colour is in check.
+        """
+        king = self.get_king(colour)
+        threatened_pieces = self.get_threatened_pieces("W" if colour == "B" else "B")
+        return king in threatened_pieces

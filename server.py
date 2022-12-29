@@ -5,7 +5,7 @@ from eventlet import wsgi
 import json
 
 from chess import chess
-import bot
+import engine
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -61,7 +61,7 @@ def board_mech(ws):
                 }}))
             case 'bot_move':
                 print("Received bot_move request")
-                bot_move = bot.get_move(board)
+                bot_move = engine.get_move(board)
                 board.move_piece(bot_move[0], bot_move[1])
                 ws.send(json.dumps({'type': 'move_piece', 'data': {
                     'from': bot_move[0],
