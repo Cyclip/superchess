@@ -87,7 +87,7 @@ class ChessBoard:
         try:
             return self.board[pos[0]][pos[1]]
         except IndexError:
-            print(f"IndexError: {pos} is not a valid position.")
+            # print(f"IndexError: {pos} is not a valid position.")
             return None
 
  
@@ -107,7 +107,10 @@ class ChessBoard:
     def move_piece(self, start_pos, end_pos):
         """Move a piece without checking for legality."""
         piece = self.get_piece(start_pos)
-        print(f"Moving {piece} from {start_pos} to {end_pos}")
+
+        # Get captured piece if any
+        captured_piece = self.get_piece(end_pos)
+
         self.set_piece(start_pos, None)
         self.set_piece(end_pos, piece)
         piece.has_moved = True
@@ -121,7 +124,7 @@ class ChessBoard:
         if isinstance(piece, chess_pieces.Pawn):
             piece.moved_two = abs(start_pos[0] - end_pos[0]) == 2
         
-        print(self)
+        return captured_piece
     
     def get_legal_moves(self, pos):
         """
@@ -225,3 +228,41 @@ class ChessBoard:
                     })
         
         return pieces
+    
+    def get_king(self, colour):
+        """Returns the king of the given colour."""
+        pieces = self.get_white_pieces() if colour == "W" else self.get_black_pieces()
+        for piece in pieces:
+            if isinstance(piece, chess_pieces.King):
+                return piece
+        
+        return None
+    
+    def is_stalemate(self, colour):
+        """Returns True if the given colour is in stalemate."""
+        pieces = self.get_white_pieces() if colour == "W" else self.get_black_pieces()
+        for piece in pieces:
+            if self.get_legal_moves(piece.pos):
+                return False
+        
+        return True
+    
+    def get_threatened_pieces(self, colour):
+        """Returns a list of pieces threatened by the given colour."""
+        pieces = self.get_white_pieces() if colour == "W" else self.get_black_pieces()
+        threatened_pieces = []
+        for piece in pieces:
+            if self.is_threatened(piece.pos):
+                threatened_pieces.append(piece)
+        
+        return threatened_pieces
+    
+    def is_threatened(self, pos):
+        """Returns True if the given position is threatened by the enemy."""
+        colour = self.get_piece(pos).colour
+        enemy_pieces = self.get_white_pieces() if colour == "B" else self.get_black_pieces()
+        for piece in enemy_pieces:
+            if pos in piece.get_moves(self):
+                return True
+        
+        return False

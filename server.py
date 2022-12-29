@@ -5,6 +5,7 @@ from eventlet import wsgi
 import json
 
 from chess import chess
+import bot
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -21,6 +22,9 @@ def index():
 
 @app.route("/play/<string:kind>")
 def play(kind):
+    if kind not in ['local', 'bot']:
+        return render_template('index.html')
+
     return render_template('play.html', kind=kind)
 
 @sock.route('/board')
@@ -54,6 +58,15 @@ def board_mech(ws):
                     'from': start_pos,
                     'to': end_pos,
                     'piece': board.get_piece(end_pos).to_json()
+                }}))
+            case 'bot_move':
+                print("Received bot_move request")
+                bot_move = bot.get_move(board)
+                board.move_piece(bot_move[0], bot_move[1])
+                ws.send(json.dumps({'type': 'move_piece', 'data': {
+                    'from': bot_move[0],
+                    'to': bot_move[1],
+                    'piece': board.get_piece(bot_move[1]).to_json()
                 }}))
             case _:
                 ws.send(json.dumps({'type': 'error', 'data': 'Invalid request'}))

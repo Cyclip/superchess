@@ -36,6 +36,9 @@ class Piece:
     def __repr__(self):
         return self.symbol
     
+    def coloured_repr(self):
+        return self.colour_code(self.symbol)
+    
     def to_json(self):
         return {
             "colour": "white" if self.colour == "W" else "black",
@@ -80,7 +83,6 @@ class Queen(Piece):
         
         # For each direction (horizontal, vertical, diagonal)
         for direction in DIRECTION_HORIZONTAL + DIRECTION_VERTICAL + DIRECTION_DIAGONAL:
-            print(f"Direction: {direction}")
             # For each step in that direction
             for i in range(1, 16):
                 pos = [self.pos[0] + direction[0] * i, self.pos[1] + direction[1] * i]
@@ -96,7 +98,6 @@ class Queen(Piece):
                         break
                     # If its an enemy piece, add it and stop
                     else:
-                        print(f"Enemy piece at {pos}")
                         moves.append(pos)
                         break
 

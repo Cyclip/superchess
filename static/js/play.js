@@ -13,6 +13,9 @@ class Board {
         // sounds
         this.moveSound = new Audio("/static/audio/move.mp3");
         this.captureSound = new Audio("/static/audio/capture.mp3");
+
+        this.toPlay = "W"; // colour to play
+        this.gameType = window.location.pathname.split("/")[2]; // game type (local, bot)
     }
 
     onOpen(event) {
@@ -94,6 +97,22 @@ class Board {
             await this.captureSound.play();
         } else {
             await this.moveSound.play();
+        }
+
+        this.onPieceMoved();
+    }
+
+    onPieceMoved() {
+        // change turn
+        this.switchToPlay();
+        
+        // if the game is bot, request bot to move
+        if (this.gameType == "bot" && this.toPlay == "B") {
+            this.sendMessage({
+                "type": "bot_move",
+                "ssid": this.ssid,
+                "data": {}
+            });
         }
     }
 
@@ -293,6 +312,37 @@ class Board {
             }
         }
     }
+
+    pieceInfo(piece) {
+        let colour;
+        if (piece.classList[1] == "white") {
+            colour = "W";
+        } else {
+            colour = "B";
+        }
+
+        let info = {
+            "type": piece.classList[2],
+            "colour": colour,
+        }
+        return info;
+    }
+
+    canClickPiece(piece) {
+        let info = this.pieceInfo(piece);
+        if (info.colour == this.toPlay) {
+            return true;
+        }
+        return false;
+    }
+
+    switchToPlay() {
+        if (this.toPlay == "W") {
+            this.toPlay = "B";
+        } else {
+            this.toPlay = "W";
+        }
+    }
 }
 
 function onCellHover(event) {
@@ -340,17 +390,21 @@ function onCellClick(event) {
 
 function onPieceClick(event) {
     let piece = event.target;
-    let pos = board.getPiecePos(piece);
-    board.selectedPiece = piece;
+    let info = board.pieceInfo(piece);
+    
+    if (info['colour'] == board.toPlay) {
+        let pos = board.getPiecePos(piece);
+        board.selectedPiece = piece;
 
-    // get legal moves
-    board.sendMessage({
-        "type": "get_legal_moves",
-        "ssid": board.ssid,
-        "data": {
-            "pos": pos
-        }
-    });
+        // get legal moves
+        board.sendMessage({
+            "type": "get_legal_moves",
+            "ssid": board.ssid,
+            "data": {
+                "pos": pos
+            }
+        });
+    }
 }
 
 let board = new Board();
