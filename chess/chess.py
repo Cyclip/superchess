@@ -25,6 +25,8 @@ class ChessBoard:
         self.last_moved_piece = None
         self.last_moved_piece_from = None
         self.last_moved_piece_to = None
+
+        print(self)
     
     def __repr__(self):
         return self.board_to_string()
@@ -109,6 +111,7 @@ class ChessBoard:
         self.set_piece(start_pos, None)
         self.set_piece(end_pos, piece)
         piece.has_moved = True
+        piece.pos = end_pos
 
         self.last_moved_piece = piece
         self.last_moved_piece_from = tuple(start_pos)
@@ -117,6 +120,8 @@ class ChessBoard:
         # May be a pawn moving 2 spaces
         if isinstance(piece, chess_pieces.Pawn):
             piece.moved_two = abs(start_pos[0] - end_pos[0]) == 2
+        
+        print(self)
     
     def get_legal_moves(self, pos):
         """

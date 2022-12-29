@@ -8,6 +8,7 @@ class Board {
 
         this.highlightedCell = []; // legal moves
         this.selectedPiece = null; // selected piece
+        this.lastMovedPositions = []; // last moved piece
     }
 
     onOpen(event) {
@@ -32,7 +33,7 @@ class Board {
 
     onMessage(event) {
         let msg = this.readMessage(event.data);
-        console.log(msg);
+        console.log("Received", msg);
         switch (msg.type) {
             case "board":
                 this.createBoard(msg.data);
@@ -44,10 +45,7 @@ class Board {
                 // remove old highlights
                 this.setCellClasses(this.highlightedCell, "");
                 this.highlightedCell = positions;
-
-                for (let i = 0; i < positions.length; i++) {
-                    this.setCellClass(positions[i], "legal-move");
-                }
+                this.setCellClasses(positions, "legal-move");
                 break;
             case "move_piece":
                 // move piece
@@ -55,7 +53,7 @@ class Board {
                 let to = msg.data.to;
                 let piece = msg.data.piece;
 
-                this.movePiece(from, to, piece);
+                this.movePieceOnBoard(from, to, piece);
         }
     }
 
@@ -64,12 +62,36 @@ class Board {
         piece.parentNode.removeChild(piece);
     }
 
-    movePiece(from, to, piece) {
+    movePieceOnBoard(from, to, piece) {
         // delete piece from old cell
         this.deletePiece(from);
 
+        // delete children from new cell, if any
+        let row = this.board.children[to[0]];
+        let cell = row.children[to[1]];
+        while (cell.firstChild) {
+            cell.removeChild(cell.firstChild);
+        }
+
         // create new piece in new cell
-        this.newPiece(piece.type, piece.color, to);
+        this.newPiece(piece.key, piece.colour, to);
+
+        // delete highlights
+        this.setCellClasses(this.highlightedCell, "");
+
+        this.setLastMovedPositions(from, to);
+    }
+
+    setLastMovedPositions(from, to) {
+        // remove old highlights
+        this.setCellClasses(this.lastMovedPositions, "");
+
+        // set new highlights
+        this.lastMovedPositions = [from, to];
+
+        // highlight last moved positions
+        this.setCellClass(from, "last-moved-primary");
+        this.setCellClass(to, "last-moved-secondary");
     }
 
     setCellClasses(positions, className) {
@@ -82,12 +104,13 @@ class Board {
         let row = this.board.children[pos[0]];
         let cell = row.children[pos[1]];
 
+        console.log("Setting cell class", pos, className, cell);
+
         // not allowing multiple classes beyond cell
         cell.className = "cell " + className;
     }
 
     createBoard(data) {
-        console.log(data);
         // create 16x16 board
         for (let i = 0; i < 16; i++) {
             let row = document.createElement("div");
@@ -171,19 +194,11 @@ class Board {
 
     getPiecePos(piece) {
         let cell = piece.parentNode;
-        let row = cell.parentNode;
-
-        // which number is the piece in its parent row
-        let index = Array.prototype.indexOf.call(row.children, cell);
-
-        // which number is the row in its parent board
-        let row_index = Array.prototype.indexOf.call(row.parentNode.children, row);
-
-        // position of the piece
-        return [row_index, index];
+        return this.getCellPos(cell);
     }
 
     getCellPos(cell) {
+        console.log("Cell pos", cell);
         let row = cell.parentNode;
 
         // which number is the cell in its parent row
@@ -218,10 +233,18 @@ class Board {
             }
         });
     }
+
+    cellHasPiece(cell) {
+        return cell.children.length > 0;
+    }
 }
 
 function onCellClick(event) {
     let cell = event.target;
+    // if target is piece, get parent cell
+    if (cell.classList.contains("piece")) {
+        cell = cell.parentNode;
+    }
     
     // get position
     let pos = board.getCellPos(cell);
@@ -229,8 +252,12 @@ function onCellClick(event) {
     // is it highlighted?
     if (board.isHighlighted(pos)) {
         // move piece
-        console.log("moving piece from " + board.getPiecePos(board.selectedPiece) + " to " + pos);
+        console.log("[onCellClick] moving piece from " + board.getPiecePos(board.selectedPiece) + " to " + pos);
         board.movePiece(pos);
+    } else if (!board.cellHasPiece(cell)) {
+        // if no piece, deselect
+        board.selectedPiece = null;
+        board.setCellClasses(board.highlightedCell, "");
     }
 }
 

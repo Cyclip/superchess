@@ -1,6 +1,24 @@
 import numpy as np
 import colorama
 
+# Directions
+DIRECTION_HORIZONTAL = [
+    [1, 0],
+    [-1, 0]
+]
+
+DIRECTION_VERTICAL = [
+    [0, 1],
+    [0, -1]
+]
+
+DIRECTION_DIAGONAL = [
+    [1, 1],
+    [-1, -1],
+    [1, -1],
+    [-1, 1]
+]
+
 class Piece:
     def __init__(self, colour, pos):
         self.colour = colour
@@ -20,7 +38,7 @@ class Piece:
     
     def to_json(self):
         return {
-            "colour": self.colour,
+            "colour": "white" if self.colour == "W" else "black",
             "pos": self.pos,
             "has_moved": self.has_moved,
             "key": self.key
@@ -59,26 +77,31 @@ class Queen(Piece):
         Once it hits a piece, it cannot move past it.
         """
         moves = []
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                if i == 0 and j == 0:
-                    continue
-                    
-                direction = [i, j]
+        
+        # For each direction (horizontal, vertical, diagonal)
+        for direction in DIRECTION_HORIZONTAL + DIRECTION_VERTICAL + DIRECTION_DIAGONAL:
+            print(f"Direction: {direction}")
+            # For each step in that direction
+            for i in range(1, 16):
+                pos = [self.pos[0] + direction[0] * i, self.pos[1] + direction[1] * i]
+                # If the position is off the board, stop
+                if pos[0] < 0 or pos[0] > 15 or pos[1] < 0 or pos[1] > 15:
+                    break
+                
+                on = board.get_piece(pos)
 
-                # Move in direction until it hits a piece
-                for k in range(16):
-                    pos = [self.pos[0] + direction[0] * (k + 1), self.pos[1] + direction[1] * (k + 1)]
-                    piece = board.get_piece(pos)
-                    if piece:
-                        if piece.colour != self.colour:
-                            # Can capture enemy piece
-                            moves.append(pos)
-                        # Cannot move past any piece
+                # If its a friendly piece, stop non-inclusive
+                if on:
+                    if on.colour == self.colour:
                         break
+                    # If its an enemy piece, add it and stop
                     else:
-                        # Can move to empty space
+                        print(f"Enemy piece at {pos}")
                         moves.append(pos)
+                        break
+
+                moves.append(pos)
+
         
         return moves
     

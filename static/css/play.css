@@ -1,7 +1,8 @@
 :root {
     --cell-color: #eeeed2;
     --cell-color-secondary: #967756;
-    --cell-color-highlight: #baca44;
+    --cell-color-highlight-primary: #caa644;
+    --cell-color-highlight-secondary: #baca44;
 }
 
 #board-container {
@@ -76,9 +77,18 @@
     overflow: hidden;
 }
 
-#board .row .cell.legal-move {
+#board .row .cell.legal-move:after {
     /* Solid gray circle in the middle */
     background-image: radial-gradient(circle, rgb(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.3) 20%, transparent 30%);
+    content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  /* Set the z-index to be higher than the children */
+  z-index: 1;
 }
 
 #board .row:nth-child(2n) .cell:nth-child(2n) {
@@ -87,6 +97,14 @@
 
 #board .row:nth-child(2n+1) .cell:nth-child(2n+1) {
     background-color: var(--cell-color-secondary);
+}
+
+#board .row .cell.last-moved-primary {
+    background-color: var(--cell-color-highlight-primary) !important;
+}
+
+#board .row .cell.last-moved-secondary {
+    background-color: var(--cell-color-highlight-secondary) !important;
 }
 
 /* Pieces */

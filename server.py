@@ -36,9 +36,11 @@ def board_mech(ws):
 
         match message['type']:
             case 'request_board':
+                print("Received request_board request")
                 ws.send(json.dumps({'type': 'board', 'data': board.pieces_to_json()}))
             case 'get_legal_moves':
                 pos = message['data']['pos']
+                print(f"Received get_legal_moves request: {pos}")
                 ws.send(json.dumps({'type': 'legal_moves', 'data': board.get_legal_moves(pos)}))
             case 'move_piece':
                 print(f"Received move_piece request: {message['data']}")
