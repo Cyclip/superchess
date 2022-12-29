@@ -3,6 +3,8 @@
     --cell-color-secondary: #967756;
     --cell-color-highlight-primary: #caa644;
     --cell-color-highlight-secondary: #baca44;
+    --legal-move-colour: rgba(0, 0, 0, 0.329);
+    --legal-move-hit-colour: rgba(255, 0, 0, 0.604);
 }
 
 #board-container {
@@ -26,6 +28,10 @@
     grid-template-columns: repeat(16, 1fr);
 }
 
+#col-labels.dim .label:not(.active), #row-labels.dim .label:not(.active) {
+    opacity: 0.25;
+}
+
 .label {
     display: flex;
     justify-content: center;
@@ -36,6 +42,12 @@
     color: var(--cell-color);
     text-align: center;
     opacity: 0.5;
+    transition: 0.2s ease-out;
+}
+
+.label.active {
+    opacity: 1;
+    text-shadow: 0 0 3px white;
 }
 
 #row-labels {
@@ -75,20 +87,37 @@
     height: 100%;
     background-color: var(--cell-color);
     overflow: hidden;
+    transition: 0.2s ease;
+}
+
+#board .row .cell.legal-move {
+    cursor: pointer;
 }
 
 #board .row .cell.legal-move:after {
-    /* Solid gray circle in the middle */
-    background-image: radial-gradient(circle, rgb(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.3) 20%, transparent 30%);
+    background-image: radial-gradient(circle, var(--legal-move-colour) 0%, var(--legal-move-colour) 20%, transparent 20%);
     content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
 
-  /* Set the z-index to be higher than the children */
-  z-index: 1;
+    /* Set the z-index to be higher than the children */
+    z-index: 1;
+}
+
+#board .row .cell.legal-move:has(.piece):after {
+    background-image: radial-gradient(circle, var(--legal-move-hit-colour) 0%, var(--legal-move-hit-colour) 20%, transparent 50%);
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    /* Set the z-index to be higher than the children */
+    z-index: 1;
 }
 
 #board .row:nth-child(2n) .cell:nth-child(2n) {

@@ -6,7 +6,7 @@ class Board {
         this.connection.onmessage = this.onMessage.bind(this);
         this.ssid = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
-        this.highlightedCell = []; // legal moves
+        this.legalMovesCells = []; // legal moves
         this.selectedPiece = null; // selected piece
         this.lastMovedPositions = []; // last moved piece
 
@@ -47,8 +47,8 @@ class Board {
                 let positions = msg.data;
 
                 // remove old highlights
-                this.setCellClasses(this.highlightedCell, "");
-                this.highlightedCell = positions;
+                this.clearLegalMoves();
+                this.legalMovesCells = positions;
                 this.setCellClasses(positions, "legal-move");
                 break;
             case "move_piece":
@@ -85,7 +85,7 @@ class Board {
         this.newPiece(piece.key, piece.colour, to);
 
         // delete highlights
-        this.setCellClasses(this.highlightedCell, "");
+        this.clearLegalMoves();
 
         this.setLastMovedPositions(from, to);
 
@@ -98,6 +98,7 @@ class Board {
     }
 
     setLastMovedPositions(from, to) {
+        console.log("Setting last moved positions", from, to)
         // remove old highlights
         this.setCellClasses(this.lastMovedPositions, "");
 
@@ -121,6 +122,8 @@ class Board {
 
         // not allowing multiple classes beyond cell
         cell.className = "cell " + className;
+
+        console.log("Setting cell class", pos, className);
     }
 
     createBoard(data) {
@@ -132,6 +135,8 @@ class Board {
                 let cell = document.createElement("div");
                 cell.classList.add("cell");
                 cell.addEventListener("click", onCellClick);
+                cell.addEventListener("mouseover", onCellHover);
+                cell.addEventListener("mouseleave", onCellLeave);
                 row.appendChild(cell);
             }
             this.board.appendChild(row);
@@ -211,7 +216,6 @@ class Board {
     }
 
     getCellPos(cell) {
-        console.log("Cell pos", cell);
         let row = cell.parentNode;
 
         // which number is the cell in its parent row
@@ -224,10 +228,19 @@ class Board {
         return [row_index, index];
     }
 
-    isHighlighted(pos) {
+    isLastMoved(pos) {
+        for (let i = 0; i < this.lastMovedPositions.length; i++) {
+            if (this.lastMovedPositions[i][0] == pos[0] && this.lastMovedPositions[i][1] == pos[1]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    isLegalMoveHighlighted(pos) {
         // no references
-        for (let i = 0; i < this.highlightedCell.length; i++) {
-            if (this.highlightedCell[i][0] == pos[0] && this.highlightedCell[i][1] == pos[1]) {
+        for (let i = 0; i < this.legalMovesCells.length; i++) {
+            if (this.legalMovesCells[i][0] == pos[0] && this.legalMovesCells[i][1] == pos[1]) {
                 return true;
             }
         }
@@ -254,6 +267,53 @@ class Board {
     cellHasPiece(cell) {
         return cell.children.length > 0;
     }
+
+    activateCellLabels(pos) {
+        document.getElementById("col-labels").classList.add("dim");
+        document.getElementById("row-labels").classList.add("dim");
+
+        document.getElementById("col-labels").children[pos[1]].classList.add("active");
+        document.getElementById("row-labels").children[pos[0]].classList.add("active");
+    }
+
+    deactivateCellLabels(pos) {
+        document.getElementById("col-labels").classList.remove("dim");
+        document.getElementById("row-labels").classList.remove("dim");
+
+        document.getElementById("col-labels").children[pos[1]].classList.remove("active");
+        document.getElementById("row-labels").children[pos[0]].classList.remove("active");
+    }
+
+    clearLegalMoves() {
+        // clear all legal moves if they are not highlighted
+        for (let i = 0; i < this.legalMovesCells.length; i++) {
+            if (!this.isLastMoved(this.legalMovesCells[i])) {
+                let cell = this.getCell(this.legalMovesCells[i]);
+                cell.classList.remove("legal-move");
+            }
+        }
+    }
+}
+
+function onCellHover(event) {
+    // if target is piece, get parent cell
+    if (event.target.classList.contains("piece")) {
+        event.target = event.target.parentNode;
+    }
+
+    // get position
+    let pos = board.getCellPos(event.target);
+    board.activateCellLabels(pos);
+}
+
+function onCellLeave(event) {
+    // if target is piece, get parent cell
+    if (event.target.classList.contains("piece")) {
+        event.target = event.target.parentNode;
+    }
+    // get position
+    let pos = board.getCellPos(event.target);
+    board.deactivateCellLabels(pos);
 }
 
 function onCellClick(event) {
@@ -267,14 +327,14 @@ function onCellClick(event) {
     let pos = board.getCellPos(cell);
 
     // is it highlighted?
-    if (board.isHighlighted(pos) && board.selectedPiece != null) {
+    if (board.isLegalMoveHighlighted(pos) && board.selectedPiece != null) {
         // move piece
         console.log("[onCellClick] moving piece from " + board.getPiecePos(board.selectedPiece) + " to " + pos);
         board.movePiece(pos);
-    } else if (!board.cellHasPiece(cell)) {
+    } else if (!board.cellHasPiece(cell) && board.selectedPiece != null) {
         // if no piece, deselect
         board.selectedPiece = null;
-        board.setCellClasses(board.highlightedCell, "");
+        board.clearLegalMoves();
     }
 }
 
