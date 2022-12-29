@@ -6,7 +6,8 @@ class Piece:
         self.colour = colour
         self.pos = pos
         self.has_moved = False
-        self.symbol = ' '
+        self.symbol = '' # optional (print)
+        self.key = '' # required
     
     def colour_code(self, symbol):
         if self.colour == "W":
@@ -16,12 +17,21 @@ class Piece:
 
     def __repr__(self):
         return self.symbol
+    
+    def to_json(self):
+        return {
+            "colour": self.colour,
+            "pos": self.pos,
+            "has_moved": self.has_moved,
+            "key": self.key
+        }
 
 class King(Piece):
     def __init__(self, colour, pos):
         super().__init__(colour, pos)
         self.value = 1000
         self.symbol = "♔"
+        self.key = "K"
     
     def get_moves(self, board):
         """
@@ -41,6 +51,7 @@ class Queen(Piece):
         super().__init__(colour, pos)
         self.value = 9
         self.symbol = "♕"
+        self.key = "Q"
     
     def get_moves(self, board):
         """
@@ -76,6 +87,7 @@ class Wormhole(Piece):
         super().__init__(colour, pos)
         self.value = 7
         self.symbol = "⇆"
+        self.key = "W"
     
     def get_moves(self, board):
         """
@@ -135,6 +147,7 @@ class Rook(Piece):
         super().__init__(colour, pos)
         self.value = 5
         self.symbol = "♖"
+        self.key = "R"
     
     def get_moves(self, board):
         """
@@ -170,6 +183,7 @@ class Bishop(Piece):
         super().__init__(colour, pos)
         self.value = 3
         self.symbol = "♗"
+        self.key = "B"
     
     def get_moves(self, board):
         """
@@ -205,6 +219,7 @@ class Knight(Piece):
         super().__init__(colour, pos)
         self.value = 3
         self.symbol = "♘"
+        self.key = "N"
     
     def get_moves(self, board):
         # Positions are in format (y, x)
@@ -233,6 +248,7 @@ class Pawn(Piece):
         self.value = 1
         self.has_moved_two_spaces = False
         self.symbol = "♙"
+        self.key = "P"
     
     def get_moves(self, board):
         """

@@ -1,0 +1,116 @@
+:root {
+    --cell-color: #eeeed2;
+    --cell-color-secondary: #967756;
+    --cell-color-highlight: #baca44;
+}
+
+#board-container {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#col-labels {
+    position: absolute;
+    top: calc(50% - 320px);
+    left: 50%;
+    transform: translateX(-50%)
+        translateY(-50%);
+    width: 600px;
+
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+}
+
+.label {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 37.5px;
+    height: 37.5px;
+    font-size: 1.5em;
+    color: var(--cell-color);
+    text-align: center;
+    opacity: 0.5;
+}
+
+#row-labels {
+    position: absolute;
+    top: 50%;
+    left: calc(50% - 40px);
+    transform: translateX(-50%)
+        translateY(-50%);
+    width: 600px;
+
+    display: grid;
+    grid-template-rows: repeat(16, 1fr);
+}
+
+#board {
+    position: relative;
+    width: 600px;
+    height: 600px;
+    background-color: #000;
+    overflow: hidden;
+
+    /* 16x16 grid */
+    display: grid;
+    grid-template-rows: repeat(16, 1fr);
+    grid-gap: 0;
+}
+
+#board .row {
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    grid-gap: 0;
+}
+
+#board .row .cell {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: var(--cell-color);
+    overflow: hidden;
+}
+
+#board .row .cell.legal-move {
+    /* Solid gray circle in the middle */
+    background-image: radial-gradient(circle, rgb(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.3) 20%, transparent 30%);
+}
+
+#board .row:nth-child(2n) .cell:nth-child(2n) {
+    background-color: var(--cell-color-secondary);
+}
+
+#board .row:nth-child(2n+1) .cell:nth-child(2n+1) {
+    background-color: var(--cell-color-secondary);
+}
+
+/* Pieces */
+#board .row .cell .piece {
+    width: 100%;
+    height: 100%;
+    background-repeat:no-repeat;
+    background-position: center center;
+    background-size: 100%;
+    cursor: pointer;
+}
+
+#board .row .cell .piece.R.black {background-image: url("/static/imgs/rb.svg");}
+#board .row .cell .piece.N.black {background-image: url("/static/imgs/nb.svg");}
+#board .row .cell .piece.B.black {background-image: url("/static/imgs/bb.svg");}
+#board .row .cell .piece.Q.black {background-image: url("/static/imgs/qb.svg");}
+#board .row .cell .piece.K.black {background-image: url("/static/imgs/kb.svg");}
+#board .row .cell .piece.P.black {background-image: url("/static/imgs/pb.svg");}
+#board .row .cell .piece.W.black {background-image: url("/static/imgs/wb.svg");}
+
+#board .row .cell .piece.R.white {background-image: url("/static/imgs/rw.svg");}
+#board .row .cell .piece.N.white {background-image: url("/static/imgs/nw.svg");}
+#board .row .cell .piece.B.white {background-image: url("/static/imgs/bw.svg");}
+#board .row .cell .piece.Q.white {background-image: url("/static/imgs/qw.svg");}
+#board .row .cell .piece.K.white {background-image: url("/static/imgs/kw.svg");}
+#board .row .cell .piece.P.white {background-image: url("/static/imgs/pw.svg");}
+#board .row .cell .piece.W.white {background-image: url("/static/imgs/ww.svg");}

@@ -1,10 +1,6 @@
 import numpy as np
-import pieces as chess_pieces
+from . import pieces as chess_pieces
 import colorama
-
-import random
-import time
-import os
 
 class ChessBoard:
     """
@@ -89,6 +85,7 @@ class ChessBoard:
         try:
             return self.board[pos[0]][pos[1]]
         except IndexError:
+            print(f"IndexError: {pos} is not a valid position.")
             return None
 
  
@@ -108,9 +105,10 @@ class ChessBoard:
     def move_piece(self, start_pos, end_pos):
         """Move a piece without checking for legality."""
         piece = self.get_piece(start_pos)
+        print(f"Moving {piece} from {start_pos} to {end_pos}")
         self.set_piece(start_pos, None)
         self.set_piece(end_pos, piece)
-        piece.moved = True
+        piece.has_moved = True
 
         self.last_moved_piece = piece
         self.last_moved_piece_from = tuple(start_pos)
@@ -178,3 +176,47 @@ class ChessBoard:
         )
         
         return np.array(list(black_pieces))
+    
+    """Some more methods to allow it to communicate with the client"""
+    def pieces_to_json(self):
+        """Create a JSON representation of the pieces on the board.
+        Example output:
+        {
+            "white": [
+                {
+                    "type": "K",
+                    "pos": [0, 4]
+                },
+                {
+                    "type": "Q",
+                    "pos": [0, 3]
+                },
+                ...
+            ],
+            "black": [
+                {
+                    "type": "K",
+                    "pos": [7, 4]
+                },
+                {
+                    "type": "Q",
+                    "pos": [7, 3]
+                },
+                ...
+            ]
+        }
+        """
+        pieces = {
+            "W": [],
+            "B": []
+        }
+        
+        for i, row in enumerate(self.board):
+            for j, piece in enumerate(row):
+                if piece:
+                    pieces[piece.colour.upper()].append({
+                        "type": piece.key,
+                        "pos": [i, j]
+                    })
+        
+        return pieces
