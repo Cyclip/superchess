@@ -9,6 +9,10 @@ class Board {
         this.highlightedCell = []; // legal moves
         this.selectedPiece = null; // selected piece
         this.lastMovedPositions = []; // last moved piece
+
+        // sounds
+        this.moveSound = new Audio("/static/audio/move.mp3");
+        this.captureSound = new Audio("/static/audio/capture.mp3");
     }
 
     onOpen(event) {
@@ -62,15 +66,19 @@ class Board {
         piece.parentNode.removeChild(piece);
     }
 
-    movePieceOnBoard(from, to, piece) {
+    async movePieceOnBoard(from, to, piece) {
+        console.log("Moving piece", from, to, piece);
         // delete piece from old cell
         this.deletePiece(from);
+
+        let isCapture = false;
 
         // delete children from new cell, if any
         let row = this.board.children[to[0]];
         let cell = row.children[to[1]];
         while (cell.firstChild) {
             cell.removeChild(cell.firstChild);
+            isCapture = true;
         }
 
         // create new piece in new cell
@@ -80,6 +88,13 @@ class Board {
         this.setCellClasses(this.highlightedCell, "");
 
         this.setLastMovedPositions(from, to);
+
+        // play sound
+        if (isCapture) {
+            await this.captureSound.play();
+        } else {
+            await this.moveSound.play();
+        }
     }
 
     setLastMovedPositions(from, to) {
@@ -103,8 +118,6 @@ class Board {
     setCellClass(pos, className) {
         let row = this.board.children[pos[0]];
         let cell = row.children[pos[1]];
-
-        console.log("Setting cell class", pos, className, cell);
 
         // not allowing multiple classes beyond cell
         cell.className = "cell " + className;
@@ -224,14 +237,18 @@ class Board {
     movePiece(cellPos) {
         // all game mechanics will be handled by the server
         let piecePos = this.getPiecePos(this.selectedPiece);
-        this.sendMessage({
-            "type": "move_piece",
-            "ssid": this.ssid,
-            "data": {
-                "from": piecePos,
-                "to": cellPos
-            }
-        });
+        
+        // from (piecePos) to (cellPos) must be different
+        if (piecePos[0] != cellPos[0] || piecePos[1] != cellPos[1]) {
+            this.sendMessage({
+                "type": "move_piece",
+                "ssid": this.ssid,
+                "data": {
+                    "from": piecePos,
+                    "to": cellPos
+                }
+            });
+        }
     }
 
     cellHasPiece(cell) {
@@ -250,7 +267,7 @@ function onCellClick(event) {
     let pos = board.getCellPos(cell);
 
     // is it highlighted?
-    if (board.isHighlighted(pos)) {
+    if (board.isHighlighted(pos) && board.selectedPiece != null) {
         // move piece
         console.log("[onCellClick] moving piece from " + board.getPiecePos(board.selectedPiece) + " to " + pos);
         board.movePiece(pos);
