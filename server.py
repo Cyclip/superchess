@@ -51,6 +51,7 @@ def board_mech(ws):
                 start_pos = message['data']['from']
                 end_pos = message['data']['to']
                 board.move_piece(start_pos, end_pos)
+                board.update_game_state()
 
                 # instead of sending the whole board, re-send the from and to positions
                 # and the piece that was moved

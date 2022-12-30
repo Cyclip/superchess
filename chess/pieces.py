@@ -87,7 +87,7 @@ class Queen(Piece):
             for i in range(1, 16):
                 pos = [self.pos[0] + direction[0] * i, self.pos[1] + direction[1] * i]
                 # If the position is off the board, stop
-                if pos[0] < 0 or pos[0] > 15 or pos[1] < 0 or pos[1] > 15:
+                if pos[0] < 0 or pos[0] > 9 or pos[1] < 0 or pos[1] > 9:
                     break
                 
                 on = board.get_piece(pos)
@@ -187,7 +187,7 @@ class Rook(Piece):
         moves = []
         for direction in directions:
             # Move in direction until it hits a piece
-            for k in range(16):
+            for k in range(10):
                 pos = [self.pos[0] + direction[0] * (k + 1), self.pos[1] + direction[1] * (k + 1)]
                 piece = board.get_piece(pos)
                 if piece:
@@ -223,7 +223,7 @@ class Bishop(Piece):
         moves = []
         for direction in directions:
             # Move in direction until it hits a piece
-            for k in range(16):
+            for k in range(10):
                 pos = [self.pos[0] + direction[0] * (k + 1), self.pos[1] + direction[1] * (k + 1)]
                 piece = board.get_piece(pos)
                 if piece:
@@ -345,18 +345,12 @@ def gen_board():
     black_pieces = [symbol_to_piece(piece.lower(), (0, i)) for i, piece in enumerate(pieces)]
     black_pawns = [symbol_to_piece("p", (1, i)) for i in range(16)]
 
-    white_pawns = [symbol_to_piece("P", (14, i)) for i in range(16)]
-    white_pieces = [symbol_to_piece(piece, (15, i)) for i, piece in enumerate(pieces[::-1])]
+    white_pawns = [symbol_to_piece("P", (8, i)) for i in range(16)]
+    white_pieces = [symbol_to_piece(piece, (9, i)) for i, piece in enumerate(pieces[::-1])]
 
     board = np.array([
         black_pieces,
         black_pawns,
-        [None] * 16,
-        [None] * 16,
-        [None] * 16,
-        [None] * 16,
-        [None] * 16,
-        [None] * 16,
         [None] * 16,
         [None] * 16,
         [None] * 16,

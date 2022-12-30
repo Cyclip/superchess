@@ -80,7 +80,7 @@ def get_threaten_value(piece):
     else:
         return 0
     
-def get_board_score(board):
+def evaluate_board(board):
     """
     Determines a score for the current board state.
     Positive score is good for white, negative score is good for black.

@@ -149,11 +149,6 @@ class ChessBoard:
         # May be a pawn moving 2 spaces
         if isinstance(piece, chess_pieces.Pawn):
             piece.moved_two = abs(start_pos[0] - end_pos[0]) == 2
-        
-        # if king is captured
-        if isinstance(piece, chess_pieces.King):
-            self.game_over = True
-            self.winner = piece.colour
 
         return captured_piece
     
@@ -321,3 +316,15 @@ class ChessBoard:
         king = self.get_king(colour)
         threatened_pieces = self.get_threatened_pieces("W" if colour == "B" else "B")
         return king in threatened_pieces
+    
+    def update_game_state(self):
+        """
+        Updates the game state.
+        """
+        # Check if game is over (king does not exist)
+        if not self.get_king("W"):
+            self.game_over = True
+            self.winner = "B"
+        elif not self.get_king("B"):
+            self.game_over = True
+            self.winner = "W"

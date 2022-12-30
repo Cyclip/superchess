@@ -1,7 +1,9 @@
 import copy
 import engine_utils
+import random
 
 MAX_DEPTH = 2
+SENTINEL_VALUE = None
 
 def get_move(board):
     """
@@ -20,7 +22,16 @@ def get_move(board):
         print(f"Transposition table hit at depth {depth}")
     else:
         # Get the best move
-        score, move = minimax(board, MAX_DEPTH, True)
+        score, move = minimax(board, MAX_DEPTH, -999999, 999999, True)
+
+        if move == SENTINEL_VALUE:
+            # No moves available
+            print(f"No moves available")
+            print(f"Score: {score}")
+            print(f"Game over: {board.game_over}")
+            print(f"[!] DEBUG: Playing random move [!]")
+            moves = engine_utils.get_all_moves(board, "B")
+            move = random.choice(list(moves.values()))[0]
 
         # Add to transposition table
         engine_utils.add_transposition(board, score, move, MAX_DEPTH)
@@ -31,96 +42,81 @@ def get_move(board):
     return move
 
 
-def minimax(board, depth, is_maximizing):
+def minimax(board, depth, alpha, beta, maximizingPlayer):
     """
-    Returns the best move for the bot (black) to make.
-
-    Arguments:
-        board: The current state of the board
-        depth: The current depth of the search
-        is_maximizing: True if we are maximizing, False if we are minimizing
-
-    Returns:
-        A tuple of the form (start_pos, end_pos)
+    Minimax algorithm with alpha-beta pruning.
     """
 
-    # DEBUG: print(f"minimax(depth={depth}, is_maximizing={is_maximizing})")
-    # If we have reached the maximum depth or the game is over, return the score
     if depth == 0 or board.game_over:
-        return engine_utils.get_board_score(board)
+        # negative score means black (us) is winning
+        return -engine_utils.evaluate_board(board), None
+    
+    if maximizingPlayer:
+        # We want to maximize the score
+        bestValue = -999999
 
-    # If we are maximizing, we want to find the move that maximizes the score
-    if is_maximizing:
-        # Get all the black pieces
+        # Get all possible moves
         pieces, moves = engine_utils.get_all_moves(board, "B")
 
-        # The best score we have found so far
-        best_score = float("-inf")
+        bestMove = None
 
-        # The best move we have found so far
-        best_move = None
-
-        # For each piece, find the best move
         for piece, piece_moves in moves.items():
             # For each move, find the best score
             for move in piece_moves:
-                # Make a copy of the board
-                new_board = copy.deepcopy(board)
+                # Copy the board
+                newBoard = copy.deepcopy(board)
 
                 # Make the move
-                new_board.move_piece(piece.pos, move)
+                newBoard.move_piece(piece.pos, move)
 
-                # Get the score for this move
-                tmp = minimax(new_board, depth - 1, False)
-                try:
-                    score = tmp[0]
-                except TypeError:
-                    score = tmp
+                # Get the score
+                value, _ = minimax(newBoard, depth - 1, alpha, beta, False)
 
-                # If this score is better than the best score, update the best score
-                # DEBUG: print(f"[maximising] checking score: {score} (move: {piece.pos} -> {move})")
-                if score > best_score:
-                    # DEBUG: print(f"[maximising] UPDATING best_score: {best_score} -> {score} (move: {piece.pos} -> {move})")
-                    best_score = score
-                    best_move = (piece.pos, move)
-        
-        # DEBUG: print(f"[maximising] RETURNING best_score: {best_score} (move: {best_move})")
-        return best_score, best_move
+                # Update the best score
+                if value > bestValue:
+                    bestValue = value
+                    bestMove = (piece.pos, move)
 
-    # If we are minimizing, we want to find the move that minimizes the score
+                # Update alpha
+                alpha = max(alpha, bestValue)
+
+                # Prune
+                if beta <= alpha:
+                    break
+
+        return bestValue, bestMove
+    
     else:
-        # Get all the white pieces
+        # We want to minimize the score
+        bestValue = 999999
+
+        # Get all possible moves
         pieces, moves = engine_utils.get_all_moves(board, "W")
 
-        # The best score we have found so far
-        best_score = float("inf")
+        bestMove = None
 
-        # The best move we have found so far
-        best_move = None
-
-        # For each piece, find the best move
         for piece, piece_moves in moves.items():
             # For each move, find the best score
             for move in piece_moves:
-                # Make a copy of the board
-                new_board = copy.deepcopy(board)
+                # Copy the board
+                newBoard = copy.deepcopy(board)
 
                 # Make the move
-                new_board.move_piece(piece.pos, move)
+                newBoard.move_piece(piece.pos, move)
 
-                # Get the score for this move
-                tmp = minimax(new_board, depth - 1, True)
-                try:
-                    score = tmp[0]
-                except TypeError:
-                    score = tmp
+                # Get the score
+                value, _ = minimax(newBoard, depth - 1, alpha, beta, True)
 
-                # If this score is better than the best score, update the best score
-                # DEBUG: print(f"[minimising] checking score: {score} (move: {piece.pos} -> {move})")
-                if score < best_score:
-                    # DEBUG: print(f"[minimising] UPDATING best_score: {best_score} -> {score} (move: {piece.pos} -> {move})")
-                    best_score = score
-                    best_move = (piece.pos, move)
-                
-        # DEBUG: print(f"[minimising] RETURNING best_score: {best_score} (move: {best_move})")
-        return best_score, best_move
+                # Update the best score
+                if value < bestValue:
+                    bestValue = value
+                    bestMove = (piece.pos, move)
+
+                # Update beta
+                beta = min(beta, bestValue)
+
+                # Prune
+                if beta <= alpha:
+                    break
+
+        return bestValue, bestMove

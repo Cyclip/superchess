@@ -146,8 +146,8 @@ class Board {
     }
 
     createBoard(data) {
-        // create 16x16 board
-        for (let i = 0; i < 16; i++) {
+        // create board (16 cols, 10 rows)
+        for (let i = 0; i < 10; i++) {
             let row = document.createElement("div");
             row.classList.add("row");
             for (let j = 0; j < 16; j++) {
