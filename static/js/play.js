@@ -1,14 +1,12 @@
 class Board {
     constructor() {
         this.board = document.getElementById("board");
-        this.connection = new WebSocket("ws://localhost:5000/board");
-        this.connection.onopen = this.onOpen.bind(this);
-        this.connection.onmessage = this.onMessage.bind(this);
         this.ssid = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
         this.legalMovesCells = []; // legal moves
         this.selectedPiece = null; // selected piece
         this.lastMovedPositions = []; // last moved piece
+        this.gameOver = false;
 
         // sounds
         this.moveSound = new Audio("/static/audio/move.mp3");
@@ -28,18 +26,7 @@ class Board {
         });
     }
 
-    sendMessage(message) {
-        this.connection.send(
-            JSON.stringify(message)
-        );
-    }
-
-    readMessage(message) {
-        return JSON.parse(message);
-    }
-
     onMessage(event) {
-        let msg = this.readMessage(event.data);
         console.log("Received", msg);
         switch (msg.type) {
             case "board":
@@ -108,11 +95,9 @@ class Board {
         
         // if the game is bot, request bot to move
         if (this.gameType == "bot" && this.toPlay == "B") {
-            this.sendMessage({
-                "type": "bot_move",
-                "ssid": this.ssid,
-                "data": {}
-            });
+            socket.emit("bot_move", {
+                "ssid": this.ssid
+            })
         }
     }
 
@@ -272,13 +257,10 @@ class Board {
         
         // from (piecePos) to (cellPos) must be different
         if (piecePos[0] != cellPos[0] || piecePos[1] != cellPos[1]) {
-            this.sendMessage({
-                "type": "move_piece",
+            socket.emit("move_piece", {
                 "ssid": this.ssid,
-                "data": {
-                    "from": piecePos,
-                    "to": cellPos
-                }
+                "from": piecePos,
+                "to": cellPos
             });
         }
     }
@@ -343,10 +325,22 @@ class Board {
             this.toPlay = "W";
         }
     }
+
+    endGame(outcome) {
+        this.gameOver = true;
+        if (outcome.type == "checkmate") {
+            let winner;
+            if (outcome.winner == "B") {
+                winner = "Black";
+            } else {
+                winner = "White";
+            }
+        } else {
+        }
+    }
 }
 
 function onCellHover(event) {
-    console.log("cell hover", event.target);
     let target = event.target;
 
     if (target.classList.contains("piece")) {
@@ -359,7 +353,6 @@ function onCellHover(event) {
 }
 
 function onCellLeave(event) {
-    console.log("cell leave", event.target);
     let target = event.target;
 
     if (target.classList.contains("piece")) {
@@ -372,44 +365,90 @@ function onCellLeave(event) {
 }
 
 function onCellClick(event) {
-    let cell = event.target;
-    // if target is piece, get parent cell
-    if (cell.classList.contains("piece")) {
-        cell = cell.parentNode;
-    }
-    
-    // get position
-    let pos = board.getCellPos(cell);
+    if (!board.gameOver) {
+        let cell = event.target;
+        // if target is piece, get parent cell
+        if (cell.classList.contains("piece")) {
+            cell = cell.parentNode;
+        }
+        
+        // get position
+        let pos = board.getCellPos(cell);
 
-    // is it highlighted?
-    if (board.isLegalMoveHighlighted(pos) && board.selectedPiece != null) {
-        // move piece
-        console.log("[onCellClick] moving piece from " + board.getPiecePos(board.selectedPiece) + " to " + pos);
-        board.movePiece(pos);
-    } else if (!board.cellHasPiece(cell) && board.selectedPiece != null) {
-        // if no piece, deselect
-        board.selectedPiece = null;
-        board.clearLegalMoves();
+        // is it highlighted?
+        if (board.isLegalMoveHighlighted(pos) && board.selectedPiece != null) {
+            // move piece
+            console.log("[onCellClick] moving piece from " + board.getPiecePos(board.selectedPiece) + " to " + pos);
+            board.movePiece(pos);
+        } else if (!board.cellHasPiece(cell) && board.selectedPiece != null) {
+            // if no piece, deselect
+            board.selectedPiece = null;
+            board.clearLegalMoves();
+        }
     }
 }
 
 function onPieceClick(event) {
-    let piece = event.target;
-    let info = board.pieceInfo(piece);
-    
-    if (info['colour'] == board.toPlay) {
-        let pos = board.getPiecePos(piece);
-        board.selectedPiece = piece;
+    if (!board.gameOver) {
+        let piece = event.target;
+        let info = board.pieceInfo(piece);
+        
+        if (info['colour'] == board.toPlay) {
+            let pos = board.getPiecePos(piece);
+            board.selectedPiece = piece;
 
-        // get legal moves
-        board.sendMessage({
-            "type": "get_legal_moves",
-            "ssid": board.ssid,
-            "data": {
+            // get legal moves
+            socket.emit("get_legal_moves", {
+                "ssid": board.ssid,
                 "pos": pos
-            }
-        });
+            });
+        }
     }
 }
 
 let board = new Board();
+
+// Connections
+const socket = io();
+console.log("Connecting to server", socket);
+
+socket.on("connect", function() {
+    console.log("connected to server, requesting board..");
+    // request board
+    socket.emit("request_board", {
+        "ssid": board.ssid
+    });
+});
+
+socket.on("disconnect", function() {
+    console.log("disconnected from server");
+});
+
+socket.on("board", function(data) {
+    console.log("received board", data);
+    board.createBoard(data);
+});
+
+socket.on("legal_moves", function(data) {
+    console.log("received legal moves", data);
+    let positions = data;
+    board.clearLegalMoves();
+    board.legalMovesCells = positions;
+    board.setCellClasses(positions, "legal-move");
+});
+
+socket.on("move_piece", function(data) {
+    console.log("received move_piece", data);
+    let from = data.from;
+    let to = data.to;
+    let piece = data.piece;
+
+    board.movePieceOnBoard(from, to, piece);
+});
+
+socket.on("game_over", function(data) {
+    console.log("game over, outcome:", data);
+    let outcome = data.outcome;
+
+    board.endGame(outcome);
+});

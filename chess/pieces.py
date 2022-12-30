@@ -1,5 +1,6 @@
 import numpy as np
 import colorama
+import copy
 
 # Directions
 DIRECTION_HORIZONTAL = [
@@ -26,6 +27,7 @@ class Piece:
         self.has_moved = False
         self.symbol = '' # optional (print)
         self.key = '' # required
+        self.starting_pos = copy.deepcopy(pos)
     
     def colour_code(self, symbol):
         if self.colour == "W":
@@ -270,6 +272,7 @@ class Pawn(Piece):
         self.has_moved_two_spaces = False
         self.symbol = "♙"
         self.key = "P"
+        self.direction = 1 if self.colour == "B" else -1
     
     def get_moves(self, board):
         """
@@ -282,20 +285,19 @@ class Pawn(Piece):
         moves = []
 
         # Rule 1: Can move relatively forward one space
-        direction = 1 if self.colour == "B" else -1
-        pos = [self.pos[0] + direction, self.pos[1]]
+        pos = [self.pos[0] + self.direction, self.pos[1]]
         if board.is_empty(pos):
             moves.append(pos)
             # Rule 2: Can move relatively forward two spaces if it has not moved yet
             if not self.has_moved:
-                pos = [self.pos[0] + direction * 2, self.pos[1]]
+                pos = [self.pos[0] + self.direction * 2, self.pos[1]]
                 if board.is_empty(pos):
                     moves.append(pos)
             
         # Rule 3: Can capture diagonally forward one space
         for i in [-1, 1]:
             # Move up in direction, and either left or right
-            pos = [self.pos[0] + direction, self.pos[1] + i]
+            pos = [self.pos[0] + self.direction, self.pos[1] + i]
             piece = board.get_piece(pos)
             if piece and piece.colour != self.colour:
                 moves.append(pos)
@@ -308,7 +310,7 @@ class Pawn(Piece):
             if isinstance(piece, Pawn) and piece.colour != self.colour:
                 # Check if the pawn has moved two spaces
                 if piece.has_moved_two_spaces:
-                    moves.append([self.pos[0] + direction, self.pos[1] + i])
+                    moves.append([self.pos[0] + self.direction, self.pos[1] + i])
 
         return moves
 

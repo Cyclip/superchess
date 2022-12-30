@@ -27,7 +27,7 @@ class ChessBoard:
         self.last_moved_piece_from = None
         self.last_moved_piece_to = None
         self.game_over = False
-        self.winner = None
+        self.outcome = None
 
         print(self)
     
@@ -324,7 +324,88 @@ class ChessBoard:
         # Check if game is over (king does not exist)
         if not self.get_king("W"):
             self.game_over = True
-            self.winner = "B"
+            self.outcome = {
+                "type": "checkmate",
+                "winner": "B"
+            }
         elif not self.get_king("B"):
             self.game_over = True
-            self.winner = "W"
+            self.outcome = {
+                "type": "checkmate",
+                "winner": "W"
+            }
+
+        # Check if game is in stalemate
+        elif self.is_stalemate("W"):
+            self.game_over = True
+            self.outcome = {
+                "type": "stalemate",
+                "winner": None,
+            }
+        elif self.is_stalemate("B"):
+            self.game_over = True
+            self.outcome = {
+                "type": "stalemate",
+                "winner": None,
+            }
+        
+    def get_pawns(self, colour):
+        """
+        Returns a list of pawns of the given colour.
+        """
+        return list(filter(
+            lambda piece: isinstance(piece, chess_pieces.Pawn),
+            self.get_white_pieces() if colour == "W" else self.get_black_pieces()
+        ))
+
+    def is_pawn_isolated(self, pawn, allPawns):
+        """
+        A pawn is isolated if it has no friendly pawns adjacent to it.
+        """
+        pos = pawn.pos
+        leftPos = (pos[0], pos[1] - 1)
+        rightPos = (pos[0], pos[1] + 1)
+
+        # Check if any pawns on the left or right
+        for p in allPawns:
+            if p.pos == leftPos or p.pos == rightPos:
+                return False
+
+        return True
+    
+    def is_pawn_doubled(self, pawn, allPawns):
+        """
+        A pawn is doubled if it has a friendly pawn on the same file.
+        """
+        # Check if any pawns on the same file
+        pos = pawn.pos
+        for p in allPawns:
+            if p.pos[1] == pos[1]:
+                return True
+
+        return False
+    
+    def is_pawn_passed(self, pawn, whitePawns, blackPawns):
+        """
+        A pawn is passed if no enemy pawn can prevent promotion.
+        """
+        # Get rank, file, direction
+        rank = pawn.pos[0]
+        file = pawn.pos[1]
+        direction = pawn.direction
+
+        # Adjacent files
+        leftFile = file - 1
+        rightFile = file + 1
+
+        # Check if any enemy pawns can prevent promotion
+        if direction == 1:
+            for p in whitePawns:
+                if p.pos[0] > rank and p.pos[1] in [leftFile, file, rightFile]:
+                    return False
+        else:
+            for p in blackPawns:
+                if p.pos[0] < rank and p.pos[1] in [leftFile, file, rightFile]:
+                    return False
+
+        return True

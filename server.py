@@ -1,5 +1,5 @@
 from flask import Flask, render_template
-from flask_sock import Sock
+from flask_socketio import SocketIO, send, emit
 import eventlet
 from eventlet import wsgi
 import json
@@ -10,7 +10,7 @@ import engine
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['TEMPLATES_AUTO_RELOAD'] = True
-sock = Sock(app)
+socketio = SocketIO(app)
 
 sessions = {
     # 'ssid': Board
@@ -27,51 +27,88 @@ def play(kind):
 
     return render_template('play.html', kind=kind)
 
-@sock.route('/board')
-def board_mech(ws):
-    while True:
-        message = json.loads(ws.receive())
-        ssid = message['ssid']
-        
-        if ssid not in sessions:
-            sessions[ssid] = chess.ChessBoard()
-        
-        board = sessions[ssid]
+@socketio.on('connect')
+def on_connect_event():
+    print("Connected")
+    emit('connected')
 
-        match message['type']:
-            case 'request_board':
-                print("Received request_board request")
-                ws.send(json.dumps({'type': 'board', 'data': board.pieces_to_json()}))
-            case 'get_legal_moves':
-                pos = message['data']['pos']
-                print(f"Received get_legal_moves request: {pos}")
-                ws.send(json.dumps({'type': 'legal_moves', 'data': board.get_legal_moves(pos)}))
-            case 'move_piece':
-                print(f"Received move_piece request: {message['data']}")
-                start_pos = message['data']['from']
-                end_pos = message['data']['to']
-                board.move_piece(start_pos, end_pos)
-                board.update_game_state()
+@socketio.on('request_board')
+def on_request_board_event(data):
+    print(f"Requesting board: {data}")
+    # Data must contain ssid
+    ssid = data['ssid']
 
-                # instead of sending the whole board, re-send the from and to positions
-                # and the piece that was moved
-                ws.send(json.dumps({'type': 'move_piece', 'data': {
-                    'from': start_pos,
-                    'to': end_pos,
-                    'piece': board.get_piece(end_pos).to_json()
-                }}))
-            case 'bot_move':
-                print("Received bot_move request")
-                bot_move = engine.get_move(board)
-                board.move_piece(bot_move[0], bot_move[1])
-                ws.send(json.dumps({'type': 'move_piece', 'data': {
-                    'from': bot_move[0],
-                    'to': bot_move[1],
-                    'piece': board.get_piece(bot_move[1]).to_json()
-                }}))
-            case _:
-                ws.send(json.dumps({'type': 'error', 'data': 'Invalid request'}))
+    # Create a new board if it doesn't exist
+    if ssid not in sessions:
+        sessions[ssid] = chess.ChessBoard()
+
+    board = sessions[ssid]
+    emit('board', board.pieces_to_json())
+
+@socketio.on('get_legal_moves')
+def on_get_legal_moves_event(data):
+    print(f"Requesting legal moves: {data}")
+    # Data must contain ssid and pos
+    ssid = data['ssid']
+    pos = data['pos']
+
+    board = sessions[ssid]
+    emit('legal_moves', board.get_legal_moves(pos))
+
+@socketio.on('move_piece')
+def on_move_piece_event(data):
+    print(f"Moving piece: {data}")
+    # Data must contain ssid, from, and to
+    ssid = data['ssid']
+    start_pos = data['from']
+    end_pos = data['to']
+
+    board = sessions[ssid]
+    board.move_piece(start_pos, end_pos)
+    board.update_game_state()
+
+    # instead of sending the whole board, re-send the from and to positions
+    # and the piece that was moved
+    emit('move_piece', {
+        'from': start_pos,
+        'to': end_pos,
+        'piece': board.get_piece(end_pos).to_json()
+    })
+
+    # Check if the game is over
+    if board.game_over:
+        emit('game_over', {
+            "outcome": board.outcome
+        })
+
+@socketio.on('bot_move')
+def on_bot_move_event(data):
+    print(f"Bot moving piece: {data}")
+    # Data must contain ssid
+    ssid = data['ssid']
+    board = sessions[ssid]
+
+    # Get the best move
+    move = engine.get_move(board)
+
+    # Move the piece
+    board.move_piece(move[0], move[1])
+    board.update_game_state()
+
+    # instead of sending the whole board, re-send the from and to positions
+    # and the piece that was moved
+    emit('move_piece', {
+        'from': move[0],
+        'to': move[1],
+        'piece': board.get_piece(move[1]).to_json()
+    })
+
+@socketio.on('disconnect')
+def on_disconnect_event():
+    print("Disconnected")
+    # Remove the session from the sessions dict
+
 
 if __name__ == '__main__':
-    app.run(debug=True)
-    # wsgi.server(eventlet.listen(('', 5000)), app)
+    # app.run(debug=True)
+    wsgi.server(eventlet.listen(('', 5000)), app)

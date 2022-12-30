@@ -3,17 +3,8 @@ import json
 
 VALUES = {
     # Game state values
-    "CHECK": 1000,
+    "CHECK": 100,
     "STALEMATE": float("-inf"),
-
-    # Capture values
-    "PAWN_CAPTURE": 100,
-    "KNIGHT_CAPTURE": 300,
-    "BISHOP_CAPTURE": 300,
-    "ROOK_CAPTURE": 500,
-    "QUEEN_CAPTURE": 900,
-    "WORMHOLE_CAPTURE": 800,
-    "KING_CAPTURE": float("inf"),
 
     # Threaten values
     "PAWN_THREATEN": 10,
@@ -23,7 +14,19 @@ VALUES = {
     "QUEEN_THREATEN": 90,
     "WORMHOLE_THREATEN": 80,
 
-    "MOBILITY": 10,
+    # Pawn structure
+    "PAWN_ISOLATED": -5,
+    "PAWN_DOUBLED": -6,
+    "PAWN_PASSED": 15,
+
+    # Piece mobility
+    "MOBILITY": 1,
+
+    # Piece development
+    "DEVELOPMENT": 10,
+
+    # Other
+    "MOBILITY": 2,
 }
 
 def get_all_moves(board, colour):
@@ -89,6 +92,8 @@ def evaluate_board(board):
     2. Threatened pieces
     3. Check
     4. Mobility
+    5. Pawn structure
+    6. Development
     """
     score = 0
 
@@ -103,6 +108,10 @@ def evaluate_board(board):
     # Get all threatened pieces
     whiteThreatenedPieces = board.get_threatened_pieces("W")
     blackThreatenedPieces = board.get_threatened_pieces("B")
+
+    # Get all pawns
+    whitePawns = board.get_pawns("W")
+    blackPawns = board.get_pawns("B")
 
     # Is in check?
     if board.is_in_check("W"):
@@ -134,6 +143,42 @@ def evaluate_board(board):
     for piece in blackMoves:
         score -= len(blackMoves[piece]) * VALUES["MOBILITY"]
     
+
+    # For each pawn, check if it is isolated, doubled, backward, or passed
+    for piece in whitePieces:
+        if isinstance(piece, chess_pieces.Pawn):
+            # Isolated
+            if not board.is_pawn_isolated(piece, whitePawns):
+                score += VALUES["PAWN_ISOLATED"]
+
+            # Doubled
+            if board.is_pawn_doubled(piece, whitePawns):
+                score += VALUES["PAWN_DOUBLED"]
+
+            # Passed
+            if board.is_pawn_passed(piece, whitePawns, blackPawns):
+                score += VALUES["PAWN_PASSED"]
+
+    for piece in blackPieces:
+        if isinstance(piece, chess_pieces.Pawn):
+            # Isolated
+            if not board.is_pawn_isolated(piece, blackPawns):
+                score -= VALUES["PAWN_ISOLATED"]
+
+            # Doubled
+            if board.is_pawn_doubled(piece, blackPawns):
+                score -= VALUES["PAWN_DOUBLED"]
+
+            # Passed
+            if board.is_pawn_passed(piece, whitePawns, blackPawns):
+                score -= VALUES["PAWN_PASSED"]
+
+    # Development
+    # Check which pieces are not in the starting position
+    for piece in whitePieces:
+        if piece.pos != piece.starting_pos:
+            score += VALUES["DEVELOPMENT"]
+
     return score
 
 
