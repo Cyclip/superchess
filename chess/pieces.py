@@ -86,9 +86,6 @@ class Queen(Piece):
             # For each step in that direction
             for i in range(1, 16):
                 pos = [self.pos[0] + direction[0] * i, self.pos[1] + direction[1] * i]
-                # If the position is off the board, stop
-                if pos[0] < 0 or pos[0] > 9 or pos[1] < 0 or pos[1] > 9:
-                    break
                 
                 on = board.get_piece(pos)
 
@@ -187,7 +184,7 @@ class Rook(Piece):
         moves = []
         for direction in directions:
             # Move in direction until it hits a piece
-            for k in range(10):
+            for k in range(16):
                 pos = [self.pos[0] + direction[0] * (k + 1), self.pos[1] + direction[1] * (k + 1)]
                 piece = board.get_piece(pos)
                 if piece:
@@ -223,7 +220,7 @@ class Bishop(Piece):
         moves = []
         for direction in directions:
             # Move in direction until it hits a piece
-            for k in range(10):
+            for k in range(16):
                 pos = [self.pos[0] + direction[0] * (k + 1), self.pos[1] + direction[1] * (k + 1)]
                 piece = board.get_piece(pos)
                 if piece:

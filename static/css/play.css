@@ -29,7 +29,7 @@
 }
 
 #col-labels.dim .label:not(.active), #row-labels.dim .label:not(.active) {
-    opacity: 0.25;
+    opacity: 0.15;
 }
 
 .label {
@@ -42,7 +42,7 @@
     color: var(--cell-color);
     text-align: center;
     opacity: 0.5;
-    transition: 0.2s ease-out;
+    transition: 0.2s cubic-bezier(0,.96,.39,.79);
 }
 
 .label.active {
@@ -53,14 +53,13 @@
 #row-labels {
     position: absolute;
     top: 50%;
-    left: 260px;
+    left: calc(50% - 500px);
     transform: translateX(-50%)
-        translateY(-31.5%);
-    width: calc(60px * 16);
-    height: calc(60px * 16);
+        translateY(-50%);
+    height: calc(60px * 10);
 
     display: grid;
-    grid-template-rows: repeat(16, 1fr);
+    grid-template-rows: repeat(10, 1fr);
 }
 
 #board {

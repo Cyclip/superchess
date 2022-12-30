@@ -346,23 +346,28 @@ class Board {
 }
 
 function onCellHover(event) {
-    // if target is piece, get parent cell
-    if (event.target.classList.contains("piece")) {
-        event.target = event.target.parentNode;
+    console.log("cell hover", event.target);
+    let target = event.target;
+
+    if (target.classList.contains("piece")) {
+        target = target.parentNode;
     }
 
     // get position
-    let pos = board.getCellPos(event.target);
+    let pos = board.getCellPos(target);
     board.activateCellLabels(pos);
 }
 
 function onCellLeave(event) {
-    // if target is piece, get parent cell
-    if (event.target.classList.contains("piece")) {
-        event.target = event.target.parentNode;
+    console.log("cell leave", event.target);
+    let target = event.target;
+
+    if (target.classList.contains("piece")) {
+        target = target.parentNode;
     }
+
     // get position
-    let pos = board.getCellPos(event.target);
+    let pos = board.getCellPos(target);
     board.deactivateCellLabels(pos);
 }
 
