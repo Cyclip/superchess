@@ -30,7 +30,7 @@ def play(kind):
 
 @socketio.on('connect')
 def on_connect_event():
-    print("Connected")
+    print("[==] Connected")
     emit('connected')
 
 @socketio.on('request_board')
@@ -81,9 +81,12 @@ def on_move_piece_event(data):
         # Remove the session from the sessions dict
         del sessions[ssid]
     else:
+        toPlay = "W" if board.last_moved_piece.colour == "B" else "B"
+        evaluation = engine_utils.evaluate_board(board, toPlay)
+        print(f"Eval: {evaluation}")
         # Send evaluation
         emit('evaluation', {
-            "evaluation": engine_utils.evaluate_board(board)
+            "evaluation": evaluation
         })
 
 @socketio.on('bot_move')
@@ -118,14 +121,16 @@ def on_bot_move_event(data):
     else:
         # Send evaluation
         emit('evaluation', {
-            "evaluation": engine.evaluate_board(board)
+            "evaluation": engine_utils.evaluate_board(board)
         })
 
 @socketio.on('disconnect')
 def on_disconnect_event():
-    print("Disconnected")
-    # Remove the session from the sessions dict
+    print("[==] Disconnected")
 
+@socketio.on('error')
+def on_error_event(data):
+    print(f"Error: {data}")
 
 if __name__ == '__main__':
     # app.run(debug=True)

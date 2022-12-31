@@ -46,11 +46,12 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
     """
     Minimax algorithm with alpha-beta pruning.
     """
+    toPlay = "B" if maximizingPlayer else "W"
 
     if depth == 0 or board.game_over:
         # negative score means black (us) is winning
-        return -engine_utils.evaluate_board(board), None
-    
+        return -engine_utils.evaluate_board(board, toPlay), None
+
     if maximizingPlayer:
         # We want to maximize the score
         bestValue = -999999

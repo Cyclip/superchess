@@ -156,9 +156,12 @@ class ChessBoard:
         """
         Returns a list of legal moves for the piece at the given position.
         """
-        piece = self.get_piece(pos)
-        if not piece:
-            return []
+        if isinstance(pos, chess_pieces.Piece):
+            piece = pos
+        else:
+            piece = self.get_piece(pos)
+            if not piece:
+                return []
         
         moves = piece.get_moves(self)
         legal_moves = []
@@ -167,6 +170,18 @@ class ChessBoard:
                 legal_moves.append(move)
         
         return legal_moves
+    
+    def is_pos_safe_for_king(self, pos, colour):
+        """
+        Returns True if the given position is safe for the king.
+        """
+        for row in self.board:
+            for piece in row:
+                if piece and piece.colour != colour:
+                    if pos in piece.get_moves(self):
+                        return False
+        
+        return True
     
     def get_legal_moves_by_piece(self, piece):
         """
@@ -409,3 +424,60 @@ class ChessBoard:
                     return False
 
         return True
+    
+    def get_king_attacks(self, colour):
+        """
+        Returns a list of pawns and pawns that are attacking a king.
+        Scenarios can be:
+        1. Pieces/pawns directly attacking the king
+            (For example, a rook on the same file as the king)
+        2. Pieces/pawns sharing a legal move with the king
+            (For example, a rook on the same file as the king, but not on the same square)
+        3. Pieces/pawns that have a distance of 4 or less from the king
+
+        Returns:
+        {
+            "direct": [...],
+            "shared": [...],
+            "distance": [...]
+        }
+        """
+        # Get king
+        king = self.get_king(colour)
+
+        # Get all pieces of opposite colour
+        pieces = self.get_white_pieces() if colour == "B" else self.get_black_pieces()
+
+        # Get all legal moves by king
+        king_moves = self.get_legal_moves(king.pos)
+
+        # Get all legal moves by opponent
+        opponent_moves = {
+            "direct": [],
+            "shared": [],
+        }
+        for piece in pieces:
+            moves = self.get_legal_moves(piece.pos)
+            for move in moves:
+                if move in king_moves:
+                    opponent_moves["shared"].append(move)
+                if move == king.pos:
+                    opponent_moves["direct"].append(move)
+
+        # Find all pieces with a distance of 4 or less from the king
+        distance = []
+        for piece in pieces:
+            if self.get_distance(piece.pos, king.pos) <= 4:
+                distance.append(piece)
+            
+        return {
+            "direct": opponent_moves["direct"],
+            "shared": opponent_moves["shared"],
+            "distance": distance
+        }
+    
+    def get_distance(self, pos1, pos2):
+        """
+        Returns the distance between two positions.
+        """
+        return max(abs(pos1[0] - pos2[0]), abs(pos1[1] - pos2[1]))

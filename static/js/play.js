@@ -1,3 +1,5 @@
+const errorSound = new Audio("/static/audio/error.ogg");
+
 class Board {
     constructor() {
         this.board = document.getElementById("board");
@@ -6,7 +8,7 @@ class Board {
         this.legalMovesCells = []; // legal moves
         this.selectedPiece = null; // selected piece
         this.lastMovedPositions = []; // last moved piece
-        this.gameOver = false;
+        this.gameOver = true;
 
         // sounds
         this.moveSound = new Audio("/static/audio/move.mp3");
@@ -340,19 +342,35 @@ class Board {
         let whiteFill = document.getElementById("evaluation-white-fill");
         let whiteText = document.getElementById("evaluation-text-w");
         let blackText = document.getElementById("evaluation-text-b");
-        evaluation = evaluation * 0.1;
 
-        let evalPerc = sigmoid(evaluation * 0.05) * 100;
-        whiteFill.style.height = evalPerc + "%";
-
-        if (evaluation >= 0) {
-            whiteText.innerHTML = Math.round(evaluation);
+        if (evaluation == 9999999999) {
+            // checkmate (white)
+            whiteFill.style.height = "100%";
+            whiteText.innerHTML = "M";
             whiteText.classList.remove("hidden");
             blackText.classList.add("hidden");
-        } else {
-            blackText.innerHTML = -Math.round(evaluation);
+        } else if (evaluation == -9999999999) {
+            // checkmate (black)
+            whiteFill.style.height = "0%";
+            blackText.innerHTML = "M";
             whiteText.classList.add("hidden");
             blackText.classList.remove("hidden");
+        } else {
+            evaluation = evaluation * 0.1;
+            let displayEval = Math.round(evaluation * 10) / 10;
+
+            let evalPerc = sigmoid(evaluation * 0.1) * 100;
+            whiteFill.style.height = evalPerc + "%";
+
+            if (evaluation >= 0) {
+                whiteText.innerHTML = displayEval;
+                whiteText.classList.remove("hidden");
+                blackText.classList.add("hidden");
+            } else {
+                blackText.innerHTML = -displayEval;
+                whiteText.classList.add("hidden");
+                blackText.classList.remove("hidden");
+            }
         }
     }
 }
@@ -467,6 +485,21 @@ function openOutcomeMenu() {
     }, 500);
 }
 
+// error handling
+function showError(err) {
+    let board_cover = document.getElementById("board-cover");
+    let text = document.getElementById("board-cover-text-p");
+
+    text.innerHTML = err;
+    board_cover.classList.remove("hidden");
+    errorSound.play();
+}
+
+function hideError() {
+    let board_cover = document.getElementById("board-cover");
+    board_cover.classList.add("hidden");
+}
+
 let chessBoard = new Board();
 
 // Connections
@@ -475,18 +508,33 @@ console.log("Connecting to server", socket);
 
 socket.on("connect", function() {
     console.log("connected to server, requesting board..");
-    // request board
-    socket.emit("request_board", {
-        "ssid": chessBoard.ssid
-    });
+    if (chessBoard.gameOver) {
+        // request board
+        socket.emit("request_board", {
+            "ssid": chessBoard.ssid
+        });
+        hideError();
+    } else {
+        console.error("Game not over, cannot request board");
+        showError("Game not over, cannot request board");
+    }
 });
 
 socket.on("disconnect", function() {
     console.log("disconnected from server");
+    chessBoard.gameOver = true;
+    showError("Unexpectedly disconnected from server.");
+});
+
+socket.on("error", function(err) {
+    console.error("error", err);
+    showError(err);
 });
 
 socket.on("board", function(data) {
     console.log("received board", data);
+    chessBoard.gameOver = false;
+    chessBoard.clearBoard();
     chessBoard.createBoard(data);
 });
 

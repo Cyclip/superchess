@@ -347,3 +347,33 @@
     top: 0;
     color: white;
 }
+
+#board-cover {
+    position: absolute;
+    background-color: rgba(23, 21, 21, 0.75);
+    overflow: hidden;
+    width: calc(16 * 60px);
+    height: calc(10 * 60px);
+
+    padding: 20px;
+    box-sizing: border-box;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+
+    z-index: 1000;
+    text-align: center;
+    cursor: default;
+}
+
+#board-cover.hidden {
+    display: none;
+}
+
+#board-cover-text-p {
+    font-size: 1.5em;
+    margin-bottom: 20px;
+    width: 100%;
+}
