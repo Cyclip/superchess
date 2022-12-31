@@ -3,7 +3,7 @@ const errorSound = new Audio("/static/audio/error.ogg");
 class Board {
     constructor() {
         this.board = document.getElementById("board");
-        this.ssid = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        this.newSSID();
 
         this.legalMovesCells = []; // legal moves
         this.selectedPiece = null; // selected piece
@@ -18,6 +18,10 @@ class Board {
 
         this.toPlay = "W"; // colour to play
         this.gameType = window.location.pathname.split("/")[2]; // game type (local, bot)
+    }
+
+    newSSID() {
+        this.ssid = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     }
 
     onOpen(event) {
@@ -454,6 +458,7 @@ function playLocal() {
     chessBoard.gameType = "local";
     chessBoard.toPlay = "W";
     chessBoard.gameOver = false;
+    chessBoard.newSSID();
     socket.emit("request_board", {"ssid": chessBoard.ssid});
     closeOutcomeMenu();
 }
@@ -464,6 +469,7 @@ function playBot() {
     chessBoard.gameType = "bot";
     chessBoard.toPlay = "W";
     chessBoard.gameOver = false;
+    chessBoard.newSSID();
     socket.emit("request_board", {"ssid": chessBoard.ssid});
     closeOutcomeMenu();
 }
@@ -552,14 +558,23 @@ socket.on("move_piece", function(data) {
     let to = data.to;
     let piece = data.piece;
 
-    chessBoard.movePieceOnBoard(from, to, piece);
+    if (chessBoard.toPlay == "B") {
+        setTimeout(function() {
+            // instant is too fast
+            chessBoard.movePieceOnBoard(from, to, piece);
+        }, 500);
+    } else {
+        chessBoard.movePieceOnBoard(from, to, piece);
+    }
 });
 
 socket.on("game_over", function(data) {
     console.log("game over, outcome:", data);
     let outcome = data.outcome;
 
-    chessBoard.endGame(outcome);
+    setTimeout(function() {
+        chessBoard.endGame(outcome);
+    }, 750);
 });
 
 socket.on("evaluation", function(data) {

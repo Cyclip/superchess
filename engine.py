@@ -5,7 +5,7 @@ import random
 MAX_DEPTH = 2
 SENTINEL_VALUE = None
 
-def get_move(board):
+def get_move(board, isBlack=True):
     """
     Returns a move for the bot (black) to make.
 
@@ -22,7 +22,7 @@ def get_move(board):
         print(f"Transposition table hit at depth {depth}")
     else:
         # Get the best move
-        score, move = minimax(board, MAX_DEPTH, -999999, 999999, True)
+        score, move = minimax(board, MAX_DEPTH, -999999, 999999, isBlack)
 
         if move == SENTINEL_VALUE:
             # No moves available
@@ -30,8 +30,16 @@ def get_move(board):
             print(f"Score: {score}")
             print(f"Game over: {board.game_over}")
             print(f"[!] DEBUG: Playing random move [!]")
-            moves = engine_utils.get_all_moves(board, "B")
-            move = random.choice(list(moves.values()))[0]
+            moves = engine_utils.get_all_moves(board, "B" if isBlack else "W")
+            
+            try:
+                move = random.choice(list(moves.values()))[0]
+                print(f"Randomly moving piece to {move}")
+            except AttributeError:
+                # Randomly move the king
+                king = board.get_king("B" if isBlack else "W")
+                move = (king.pos, random.choice(board.get_legal_moves(king.pos)))
+                print(f"Randomly moving king to {move}")
 
         # Add to transposition table
         engine_utils.add_transposition(board, score, move, MAX_DEPTH)

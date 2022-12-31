@@ -35,11 +35,14 @@ def on_connect_event():
 
 @socketio.on('request_board')
 def on_request_board_event(data):
-    print(f"Requesting board: {data}")
-    # Always rewrite the board
+    print(f"Request board: {data}")
     ssid = data['ssid']
-    sessions[ssid] = chess.ChessBoard()
 
+    if not ssid in sessions:
+        # Create a new board
+        board = chess.ChessBoard()
+        sessions[ssid] = board
+    
     board = sessions[ssid]
     emit('board', board.pieces_to_json())
 
@@ -119,9 +122,11 @@ def on_bot_move_event(data):
         # Remove the session from the sessions dict
         del sessions[ssid]
     else:
+        toPlay = "W" if board.last_moved_piece.colour == "B" else "B"
+        evaluation = engine_utils.evaluate_board(board, toPlay)
         # Send evaluation
         emit('evaluation', {
-            "evaluation": engine_utils.evaluate_board(board)
+            "evaluation": engine_utils.evaluate_board(board, toPlay)
         })
 
 @socketio.on('disconnect')

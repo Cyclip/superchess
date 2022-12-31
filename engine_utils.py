@@ -266,22 +266,29 @@ def evaluate_board(board, toPlay):
     # King mobility
     kingW = board.get_king("W")
     kingB = board.get_king("B")
-    
-    # Get all moves for the king that don't put it in check
-    kingMovesW = list(filter(
-        lambda x: board.is_pos_safe_for_king(x, "W"),
-        board.get_legal_moves(kingW)
-    ))
 
-    kingMovesB = list(filter(
-        lambda x: board.is_pos_safe_for_king(x, "B"),
-        board.get_legal_moves(kingB)
-    ))
+    if not kingW:
+        # Checkmate for black
+        score = -VALUES["KING_CAPTURE"]
+    elif not kingB:
+        # Checkmate for white
+        score = VALUES["KING_CAPTURE"]
+    else:
+        # Get all moves for the king that don't put it in check
+        kingMovesW = list(filter(
+            lambda x: board.is_pos_safe_for_king(x, "W"),
+            board.get_legal_moves(kingW)
+        ))
 
-    # DEBUG: print(f"[+{len(kingMovesW) * VALUES['KING_MOBILITY']}] White king has {len(kingMovesW)} safe moves")
-    # DEBUG: print(f"[-{len(kingMovesB) * VALUES['KING_MOBILITY']}] Black king has {len(kingMovesB)} safe moves")
-    score += len(kingMovesW) * VALUES["KING_MOBILITY"]
-    score -= len(kingMovesB) * VALUES["KING_MOBILITY"]
+        kingMovesB = list(filter(
+            lambda x: board.is_pos_safe_for_king(x, "B"),
+            board.get_legal_moves(kingB)
+        ))
+
+        # DEBUG: print(f"[+{len(kingMovesW) * VALUES['KING_MOBILITY']}] White king has {len(kingMovesW)} safe moves")
+        # DEBUG: print(f"[-{len(kingMovesB) * VALUES['KING_MOBILITY']}] Black king has {len(kingMovesB)} safe moves")
+        score += len(kingMovesW) * VALUES["KING_MOBILITY"]
+        score -= len(kingMovesB) * VALUES["KING_MOBILITY"]
 
     if score == float("inf"):
         return 9999999999

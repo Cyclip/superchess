@@ -444,6 +444,12 @@ class ChessBoard:
         """
         # Get king
         king = self.get_king(colour)
+        if not king:
+            return {
+                "direct": [],
+                "shared": [],
+                "distance": []
+            }
 
         # Get all pieces of opposite colour
         pieces = self.get_white_pieces() if colour == "B" else self.get_black_pieces()
