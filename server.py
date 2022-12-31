@@ -6,6 +6,7 @@ import json
 
 from chess import chess
 import engine
+import engine_utils
 
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -79,6 +80,11 @@ def on_move_piece_event(data):
         })
         # Remove the session from the sessions dict
         del sessions[ssid]
+    else:
+        # Send evaluation
+        emit('evaluation', {
+            "evaluation": engine_utils.evaluate_board(board)
+        })
 
 @socketio.on('bot_move')
 def on_bot_move_event(data):
@@ -101,6 +107,19 @@ def on_bot_move_event(data):
         'to': move[1],
         'piece': board.get_piece(move[1]).to_json()
     })
+
+    # Check if the game is over
+    if board.game_over:
+        emit('game_over', {
+            "outcome": board.outcome
+        })
+        # Remove the session from the sessions dict
+        del sessions[ssid]
+    else:
+        # Send evaluation
+        emit('evaluation', {
+            "evaluation": engine.evaluate_board(board)
+        })
 
 @socketio.on('disconnect')
 def on_disconnect_event():

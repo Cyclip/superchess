@@ -335,6 +335,30 @@ class Board {
             "ssid": this.ssid
         });
     }
+
+    setEvaluation(evaluation) {
+        let whiteFill = document.getElementById("evaluation-white-fill");
+        let whiteText = document.getElementById("evaluation-text-w");
+        let blackText = document.getElementById("evaluation-text-b");
+        evaluation = evaluation * 0.1;
+
+        let evalPerc = sigmoid(evaluation * 0.05) * 100;
+        whiteFill.style.height = evalPerc + "%";
+
+        if (evaluation >= 0) {
+            whiteText.innerHTML = Math.round(evaluation);
+            whiteText.classList.remove("hidden");
+            blackText.classList.add("hidden");
+        } else {
+            blackText.innerHTML = -Math.round(evaluation);
+            whiteText.classList.add("hidden");
+            blackText.classList.remove("hidden");
+        }
+    }
+}
+
+function sigmoid(x) {
+    return 1 / (1 + Math.exp(-x));
 }
 
 function onCellHover(event) {
@@ -489,3 +513,11 @@ socket.on("game_over", function(data) {
 
     chessBoard.endGame(outcome);
 });
+
+socket.on("evaluation", function(data) {
+    console.log("received evaluation", data);
+    let evaluation = data.evaluation;
+    let colour = data.colour;
+
+    chessBoard.setEvaluation(evaluation, colour);
+})
