@@ -35,12 +35,9 @@ def on_connect_event():
 @socketio.on('request_board')
 def on_request_board_event(data):
     print(f"Requesting board: {data}")
-    # Data must contain ssid
+    # Always rewrite the board
     ssid = data['ssid']
-
-    # Create a new board if it doesn't exist
-    if ssid not in sessions:
-        sessions[ssid] = chess.ChessBoard()
+    sessions[ssid] = chess.ChessBoard()
 
     board = sessions[ssid]
     emit('board', board.pieces_to_json())
@@ -80,6 +77,8 @@ def on_move_piece_event(data):
         emit('game_over', {
             "outcome": board.outcome
         })
+        # Remove the session from the sessions dict
+        del sessions[ssid]
 
 @socketio.on('bot_move')
 def on_bot_move_event(data):

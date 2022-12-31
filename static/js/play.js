@@ -11,6 +11,8 @@ class Board {
         // sounds
         this.moveSound = new Audio("/static/audio/move.mp3");
         this.captureSound = new Audio("/static/audio/capture.mp3");
+        this.gameStartSound = new Audio("/static/audio/game_start.ogg");
+        this.gameEndSound = new Audio("/static/audio/game_end.ogg");
 
         this.toPlay = "W"; // colour to play
         this.gameType = window.location.pathname.split("/")[2]; // game type (local, bot)
@@ -24,31 +26,6 @@ class Board {
             "ssid": this.ssid,
             "data": {}
         });
-    }
-
-    onMessage(event) {
-        console.log("Received", msg);
-        switch (msg.type) {
-            case "board":
-                this.createBoard(msg.data);
-                break;
-            case "legal_moves":
-                // highlight legal moves
-                let positions = msg.data;
-
-                // remove old highlights
-                this.clearLegalMoves();
-                this.legalMovesCells = positions;
-                this.setCellClasses(positions, "legal-move");
-                break;
-            case "move_piece":
-                // move piece
-                let from = msg.data.from;
-                let to = msg.data.to;
-                let piece = msg.data.piece;
-
-                this.movePieceOnBoard(from, to, piece);
-        }
     }
 
     deletePiece(pos) {
@@ -126,8 +103,6 @@ class Board {
 
         // not allowing multiple classes beyond cell
         cell.className = "cell " + className;
-
-        console.log("Setting cell class", pos, className);
     }
 
     createBoard(data) {
@@ -186,6 +161,9 @@ class Board {
         for (let i = 0; i < black.length; i++) {
             this.newPiece(black[i].type, "black", black[i].pos)
         }
+
+        // game has started
+        this.gameStartSound.play();
     }
 
     newPiece(type, color, pos) {
@@ -328,15 +306,34 @@ class Board {
 
     endGame(outcome) {
         this.gameOver = true;
-        if (outcome.type == "checkmate") {
-            let winner;
-            if (outcome.winner == "B") {
-                winner = "Black";
-            } else {
-                winner = "White";
-            }
+        this.setWinner(outcome.winner);
+        openOutcomeMenu();
+        this.gameEndSound.play();
+    }
+
+    setWinner(winner) {
+        let outcomeName = document.getElementById("outcome-name");
+        let outcomeIconW = document.getElementById("outcome-icon-w");
+        let outcomeIconB = document.getElementById("outcome-icon-b");
+
+        if (winner == "W") {
+            outcomeName.innerHTML = "White wins!";
+            outcomeIconW.classList.add("active");
+            outcomeIconB.classList.remove("active");
         } else {
+            outcomeName.innerHTML = "Black wins!";
+            outcomeIconW.classList.remove("active");
+            outcomeIconB.classList.add("active");
         }
+    }
+
+    clearBoard() {
+        this.board.innerHTML = "";
+
+        // request board again
+        socket.emit("get_board", {
+            "ssid": this.ssid
+        });
     }
 }
 
@@ -348,8 +345,8 @@ function onCellHover(event) {
     }
 
     // get position
-    let pos = board.getCellPos(target);
-    board.activateCellLabels(pos);
+    let pos = chessBoard.getCellPos(target);
+    chessBoard.activateCellLabels(pos);
 }
 
 function onCellLeave(event) {
@@ -360,12 +357,12 @@ function onCellLeave(event) {
     }
 
     // get position
-    let pos = board.getCellPos(target);
-    board.deactivateCellLabels(pos);
+    let pos = chessBoard.getCellPos(target);
+    chessBoard.deactivateCellLabels(pos);
 }
 
 function onCellClick(event) {
-    if (!board.gameOver) {
+    if (!chessBoard.gameOver) {
         let cell = event.target;
         // if target is piece, get parent cell
         if (cell.classList.contains("piece")) {
@@ -373,40 +370,80 @@ function onCellClick(event) {
         }
         
         // get position
-        let pos = board.getCellPos(cell);
+        let pos = chessBoard.getCellPos(cell);
 
         // is it highlighted?
-        if (board.isLegalMoveHighlighted(pos) && board.selectedPiece != null) {
+        if (chessBoard.isLegalMoveHighlighted(pos) && chessBoard.selectedPiece != null) {
             // move piece
-            console.log("[onCellClick] moving piece from " + board.getPiecePos(board.selectedPiece) + " to " + pos);
-            board.movePiece(pos);
-        } else if (!board.cellHasPiece(cell) && board.selectedPiece != null) {
+            console.log("[onCellClick] moving piece from " + chessBoard.getPiecePos(chessBoard.selectedPiece) + " to " + pos);
+            chessBoard.movePiece(pos);
+        } else if (!chessBoard.cellHasPiece(cell) && chessBoard.selectedPiece != null) {
             // if no piece, deselect
-            board.selectedPiece = null;
-            board.clearLegalMoves();
+            chessBoard.selectedPiece = null;
+            chessBoard.clearLegalMoves();
         }
     }
 }
 
 function onPieceClick(event) {
-    if (!board.gameOver) {
+    if (!chessBoard.gameOver) {
         let piece = event.target;
-        let info = board.pieceInfo(piece);
+        let info = chessBoard.pieceInfo(piece);
         
-        if (info['colour'] == board.toPlay) {
-            let pos = board.getPiecePos(piece);
-            board.selectedPiece = piece;
+        if (info['colour'] == chessBoard.toPlay) {
+            let pos = chessBoard.getPiecePos(piece);
+            chessBoard.selectedPiece = piece;
 
             // get legal moves
             socket.emit("get_legal_moves", {
-                "ssid": board.ssid,
+                "ssid": chessBoard.ssid,
                 "pos": pos
             });
         }
     }
 }
 
-let board = new Board();
+// outcome functions
+const outcome_menu = document.getElementById("outcome");
+
+function playLocal() {
+    window.history.pushState("", "", "/play/local");
+    chessBoard.clearBoard();
+    chessBoard.gameType = "local";
+    chessBoard.toPlay = "W";
+    chessBoard.gameOver = false;
+    socket.emit("request_board", {"ssid": chessBoard.ssid});
+    closeOutcomeMenu();
+}
+
+function playBot() {
+    window.history.pushState("", "", "/play/bot");
+    chessBoard.clearBoard();
+    chessBoard.gameType = "bot";
+    chessBoard.toPlay = "W";
+    chessBoard.gameOver = false;
+    socket.emit("request_board", {"ssid": chessBoard.ssid});
+    closeOutcomeMenu();
+}
+
+function closeOutcomeMenu() {
+    // fade out
+    outcome_menu.classList.add("fadeout");
+    setTimeout(function() {
+        outcome_menu.classList.remove("fadeout");
+        outcome_menu.classList.add("hidden");
+    }, 500);
+}
+
+function openOutcomeMenu() {
+    outcome_menu.classList.remove("hidden");
+    outcome_menu.classList.add("fadein");
+    setTimeout(function() {
+        outcome_menu.classList.remove("fadein");
+    }, 500);
+}
+
+let chessBoard = new Board();
 
 // Connections
 const socket = io();
@@ -416,7 +453,7 @@ socket.on("connect", function() {
     console.log("connected to server, requesting board..");
     // request board
     socket.emit("request_board", {
-        "ssid": board.ssid
+        "ssid": chessBoard.ssid
     });
 });
 
@@ -426,15 +463,15 @@ socket.on("disconnect", function() {
 
 socket.on("board", function(data) {
     console.log("received board", data);
-    board.createBoard(data);
+    chessBoard.createBoard(data);
 });
 
 socket.on("legal_moves", function(data) {
     console.log("received legal moves", data);
     let positions = data;
-    board.clearLegalMoves();
-    board.legalMovesCells = positions;
-    board.setCellClasses(positions, "legal-move");
+    chessBoard.clearLegalMoves();
+    chessBoard.legalMovesCells = positions;
+    chessBoard.setCellClasses(positions, "legal-move");
 });
 
 socket.on("move_piece", function(data) {
@@ -443,12 +480,12 @@ socket.on("move_piece", function(data) {
     let to = data.to;
     let piece = data.piece;
 
-    board.movePieceOnBoard(from, to, piece);
+    chessBoard.movePieceOnBoard(from, to, piece);
 });
 
 socket.on("game_over", function(data) {
     console.log("game over, outcome:", data);
     let outcome = data.outcome;
 
-    board.endGame(outcome);
+    chessBoard.endGame(outcome);
 });
